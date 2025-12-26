@@ -37,6 +37,8 @@
     EXTERN parser_parse_line
     EXTERN _assemble_def_label
     EXTERN _assemble_ref_label
+    EXTERN _assemble_ref_relative
+    EXTERN list_entry_value_flag_t
     EXTERN word_to_ascii
 
 
@@ -229,6 +231,12 @@ assemble_file_0:
     dec de
     call data_list_new_entry
     ret nz
+    push de
+    ld hl, list_entry_value_flag_t
+    add hl, de
+    ld a, (_assemble_ref_relative)
+    ld (hl), a
+    pop de
     ; Prepend the current entry to the one we already have
     ld hl, (list_ref)
     ex de, hl
@@ -371,10 +379,18 @@ assemble_replace_references_loop:
     ; HL contains the current label reference, get the place where the reference was in the code.
     push hl
     call data_list_get_value
-    ; The value is the virtual address (in the current program) to patch
+    ; HL points to value storage: [addr_lo][addr_hi][relative_flag]
     ld a, (hl)
+    ld c, a
+    inc hl
+    ld a, (hl)
+    ld b, a
+    inc hl
+    ld a, (hl)
+    ld h, b
+    ld l, c
+    ; If flag is NOT 0, the instruction is a relative jump
     or a
-    ; If A is NOT 0, the instruction is a relative jump
     jr nz, assemble_replace_relative
     ; The reference was absolute, replace the content
     ld (hl), e

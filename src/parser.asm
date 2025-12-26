@@ -313,6 +313,7 @@ parser_parse_line:
     xor a
     ld (_assemble_def_label + 1), a
     ld (_assemble_ref_label + 1), a
+    ld (_assemble_ref_relative), a
     call parser_split_line
     ; If we haven't written any string, the line was empty (or a comment or a label)
     ; return directly. If there was an error, return directly too.
@@ -1605,6 +1606,12 @@ _assemble_instr_jr_1param:
     ld a, c
     ; Check the type of the parameter, JR e only accepts constants
     CHECK_LABEL_OR_CONSTANT()
+    ld a, c
+    cp ASSEMBLE_LABEL_NAME
+    jr nz, _assemble_instr_jr_1param_const
+    ld a, 1
+    ld (_assemble_ref_relative), a
+_assemble_instr_jr_1param_const:
     ld a, d
     or a
     ; The parameter must be a byte
@@ -1625,6 +1632,12 @@ _assemble_instr_jr_2params:
     or a
     ; The constant must be a byte
     jp nz, _assemble_instr_operand_error
+    ld a, c
+    cp ASSEMBLE_LABEL_NAME
+    jr nz, _assemble_instr_jr_2param_const
+    ld a, 1
+    ld (_assemble_ref_relative), a
+_assemble_instr_jr_2param_const:
     ; Check for the flags
     ld a, b
     bit ASSEMBLE_FLAG_BIT, a
@@ -1656,6 +1669,12 @@ _assemble_instr_djnz:
     ld a, c
     ; Check the type of the parameter, JR e only accepts constants
     CHECK_LABEL_OR_CONSTANT()
+    ld a, c
+    cp ASSEMBLE_LABEL_NAME
+    jr nz, _assemble_instr_djnz_const
+    ld a, 1
+    ld (_assemble_ref_relative), a
+_assemble_instr_djnz_const:
     ld a, d
     or a
     ; The parameter must be a byte
@@ -2236,6 +2255,8 @@ _assemble_def_label: DEFS 2
     ; Space used to store the address of a label referenced by the current instruction
     PUBLIC _assemble_ref_label
 _assemble_ref_label: DEFS 2
+    PUBLIC _assemble_ref_relative
+_assemble_ref_relative: DEFS 1
 
 _assemble_instr_str: DEFS 2
 _assemble_reg1_str:  DEFS 2

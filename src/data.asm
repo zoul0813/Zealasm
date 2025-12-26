@@ -22,6 +22,7 @@
         list_entry_content_t      DS.B 0
         list_entry_key_t          DS.B 16
         list_entry_value_t        DS.B 2  ; resulted binary should not exceed 64KB
+        list_entry_value_flag_t   DS.B 1
         list_entry_content_end_t  DS.B 0
         list_entry_next_t         DS.B 2
         list_entry_end_t          DS.B 0
@@ -30,6 +31,7 @@
     DEFC LIST_ENTRY_KEY_SIZE     =  list_entry_value_t - list_entry_key_t
     DEFC LIST_ENTRY_CONTENT_SIZE = list_entry_content_end_t - list_entry_content_t
     DEFC LIST_ENTRY_SIZE         = list_entry_end_t
+    PUBLIC list_entry_value_flag_t
 
 
     SECTION TEXT
@@ -169,21 +171,17 @@ data_list_prepend_entry:
     ret
 
 
-    ; Get the value of the list entry.
+    ; Get the address of the list entry value storage.
     ; Parameters:
     ;   HL - List entry
     ; Returns:
-    ;   HL - Value of the entry
+    ;   HL - Address of the value storage
     ; Alters:
     ;   A, BC, HL
     PUBLIC data_list_get_value
 data_list_get_value:
     ld bc, list_entry_value_t
     add hl, bc
-    ld a, (hl)
-    inc hl
-    ld h, (hl)
-    ld l, a
     ret
 
 
@@ -309,6 +307,8 @@ data_list_allocate_entry:
     ld (hl), e
     inc hl
     ld (hl), d
+    inc hl
+    ld (hl), 0
     ; Success, we can return the newly allocated pointer
     pop de
     xor a
