@@ -309,6 +309,11 @@ data_list_allocate_entry:
     ld (hl), e
     inc hl
     ld (hl), d
+    inc hl
+    xor a
+    ld (hl), a
+    inc hl
+    ld (hl), a
     ; Success, we can return the newly allocated pointer
     pop de
     xor a
