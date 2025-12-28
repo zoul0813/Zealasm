@@ -12,6 +12,7 @@
     EXTERN strnltrim
     EXTERN strnrtrim
     EXTERN strsep
+    EXTERN strsepq
     EXTERN strcmp
     EXTERN strcpy
     EXTERN strlen

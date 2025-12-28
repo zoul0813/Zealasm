@@ -300,6 +300,95 @@ _strsep_found:
     ret
 
 
+    ; Look for the delimiter A in the string pointed by HL, ignoring matches
+    ; inside quoted strings (\"...\") with support for backslash escapes.
+    ; Once it finds it, the token is replaced by \\0.
+    ; Parameters:
+    ;       HL - Address of the string
+    ;       A - Delimiter
+    ; Returns:
+    ;       DE - Address of the next string (address of the token found +1)
+    ;       A - 0 if the delimiter was found, non-null value else
+    ; Alters:
+    ;       A, BC, DE
+    PUBLIC strsepq
+strsepq:
+    push hl
+    push bc
+    ld d, a      ; delimiter
+    ld b, 0      ; in_quotes
+    ld c, 0      ; escape
+_strsepq_loop:
+    ld a, (hl)
+    or a
+    jr z, _strsepq_not_found
+    cp 0x5c      ; '\\'
+    jr nz, _strsepq_check_quote
+    ld a, b
+    or a
+    jr z, _strsepq_advance
+    ld a, c
+    or a
+    jr z, _strsepq_set_escape
+    xor a
+    ld c, a
+    jr _strsepq_advance
+_strsepq_set_escape:
+    ld c, 1
+    jr _strsepq_advance
+_strsepq_check_quote:
+    cp 0x22      ; '\"'
+    jr nz, _strsepq_check_delim
+    ld a, c
+    or a
+    jr z, _strsepq_toggle_quote
+    xor a
+    ld c, a
+    jr _strsepq_advance
+_strsepq_toggle_quote:
+    ld a, b
+    or a
+    jr z, _strsepq_set_quote
+    xor a
+    ld b, a
+    jr _strsepq_clear_escape_after_toggle
+_strsepq_set_quote:
+    ld b, 1
+_strsepq_clear_escape_after_toggle:
+    xor a
+    ld c, a
+    jr _strsepq_advance
+_strsepq_check_delim:
+    ld a, b
+    or a
+    jr nz, _strsepq_clear_escape
+    ld a, (hl)
+    cp d
+    jr z, _strsepq_found
+_strsepq_clear_escape:
+    ld a, c
+    or a
+    jr z, _strsepq_advance
+    xor a
+    ld c, a
+_strsepq_advance:
+    inc hl
+    jr _strsepq_loop
+_strsepq_not_found:
+    ld a, 1
+    pop bc
+    pop hl
+    ret
+_strsepq_found:
+    xor a
+    ld (hl), a
+    inc hl
+    ex de, hl
+    pop bc
+    pop hl
+    ret
+
+
     ; Calculate the length of a NULL-terminated string
     ; Parameters:
     ;       HL - Address of the string

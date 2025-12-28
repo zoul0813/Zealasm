@@ -38,9 +38,18 @@
 parser_split_line:
     ; Remove the comment if there is any
     ld a, ';'
-    call strsep
-    call strltrim
+    call strsepq
     call strrtrim
+    ; Labels must start in the first column and never start with '.'
+    ld a, (hl)
+    or a
+    jr z, _parse_line_trimmed
+    cp ' '
+    jr z, _parse_line_trimmed
+    cp '\t'
+    jr z, _parse_line_trimmed
+    cp '.'
+    jr z, _parse_line_trimmed
     ; Check if there is a label defined
     call parser_label_defined
     ; Return right now in case of an error
@@ -48,6 +57,7 @@ parser_split_line:
     or a
     ret nz
 
+_parse_line_trimmed:
     call strltrim
     ; Prepare the return value
     ld b, 0
@@ -225,7 +235,7 @@ _assemble_direct_org:
     ;   B - 0 on success, ASSEMBLE_SYNTAX_ERROR on error
 parser_label_defined:
     ld a, ':'
-    call strsep
+    call strsepq
     ; A is 0 if we found ':', positive value else. We have to
     ; return A = 0 if we didn't find anything. HL was not altered.
     or a
